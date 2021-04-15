@@ -6,8 +6,8 @@ d3.json(queryURL, function(data) {
     createFeatures(data.features);
 
     function formatCircles(feature) {
-        return {
-            opacity: 0.5,
+        var geojsonMarkerOptions = {
+            opacity: 1,
             color: "#FFFFFF",
             fillColor: setColor(feature.geometry.coordinates[2]),
             radius: setRadius(feature.properties.mag),
@@ -15,19 +15,41 @@ d3.json(queryURL, function(data) {
             weight: 0.5,
             type: "Circle"
         };
-
+        var latlng = L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0])
+        // console.log(feature);
+        console.log(feature.geometry.coordinates);
+        var marker =  L.circleMarker(latlng, geojsonMarkerOptions);
+        marker.bindPopup("<h3>Location: "+feature.properties.place+"</h3><hr><h3>Magnitude: "
+                            +feature.properties.mag+"</h3>");
+        return marker;
     }
+
+    var max = data.features[0]
+    var min = data.features[0]
+
+    data.features.forEach((feature) => {
+        var current = feature.geometry.coordinates[2];
+        if(current < min.geometry.coordinates[2]) min = feature;
+        if(current > max.geometry.coordinates[2]) max = feature;
+    })
+
+    var upperThreshold = max.geometry.coordinates[2];
+    var lowerThreshold = min.geometry.coordinates[2];
+
+    var midThreshold = (upperThreshold - lowerThreshold) / 2;
+    var upperQuartile = (upperThreshold - midThreshold) / 2;
+    var lowerQuartile = (midThreshold - lowerThreshold) / 2;
 
     function setColor(depth) {
         switch (true) {
-            case depth > 90:
-              return "#FF3342";
-            case depth >60:
-                return "#E6FF33";
-            case depth > 30:
-                return "#42FF33";
+            case depth > 70:
+              return "#FF0000";
+            case depth >40:
+                return "#00FF00";
+            case depth > 25:
+                return "#0000FF";
             default:
-                return "#306D49";
+                return "#000000";
         }
     }
 
@@ -42,15 +64,14 @@ function createFeatures(earthquakeData) {
 
 
     //Assign each feature a popup describing time and place of earthquake
-    function onEachFeature(feature, layer) {
-        layer.bindPopup("<h3>Location: "+feature.properties.place+"</h3><hr><h3>Time: "
-                        +feature.properties.time+"</h3>")
-    };
-
+    // function onEachFeature(feature, layer) {
+    //     layer.bindPopup("<h3>Location: "+feature.properties.place+"</h3><hr><h3>Time: "
+    //                     +feature.properties.time+"</h3>")
+    // };
+    // console.log(earthquakeData);
     //Create earthquakedata object, and run the onEachFeature function
-    var earthquakes = L.geoJSON(earthquakeData, feature, {
-        pointToLayer: formatCircles,
-        onEachFeature: onEachFeature
+    var earthquakes = L.geoJSON(earthquakeData, {
+        pointToLayer: formatCircles
     });
 
     //Send the earthquake layer into a createMap function
@@ -93,6 +114,23 @@ function createMap(earthquakes) {
         collapsed: false
     }).addTo(myMap);
 
+    var legend = L.control({
+        position: "bottomleft"
+    });
+
+    legend.onAdd = function(map){
+        var div = L.DomUtil.create("div", "info legend");
+        var labels = ["<strong>Depth</strong>"];
+        var categories = [">70", ">40",">25", "<=25"];
+        var colors = ["#FF0000", "#00FF00", "#0000FF", "#000000"]
+        for(var i=0; i < categories.length; i++) {
+            div.innerHTML += labels.push('<div class="circle" style="background-color: ' + colors[i] + '"></div><span class="cat">  ' + categories[i] + '</span>')
+        }
+        div.innerHTML = labels.join("<br>");
+        return div;
+    }
+
+    legend.addTo(myMap);
 }
 
 });
