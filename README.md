@@ -3,3 +3,5 @@ The objective of this repository was to create an interactive visualization that
 
 ![finalMap.png](Code/Step1/static/images/finalMap.png)
 
+*Note that the config file in this repository is empty in order to not publically reveal my API KEY. In order to run the visualization, you must put in your API KEY for mapbox into the config file.
+
